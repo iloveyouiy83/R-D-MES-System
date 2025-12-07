@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LayoutDashboard, LogOut } from 'lucide-react';
 import { ViewState } from '../types';
@@ -35,6 +36,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
                   className={`hover:text-blue-600 transition-colors ${['list', 'view', 'edit'].includes(currentView) ? 'text-blue-600' : ''}`}
                 >
                   프로젝트 목록
+                </button>
+                <button 
+                  onClick={() => onNavigate('notices')}
+                  className={`hover:text-blue-600 transition-colors ${currentView === 'notices' ? 'text-blue-600' : ''}`}
+                >
+                  공지사항
                 </button>
               </nav>
               

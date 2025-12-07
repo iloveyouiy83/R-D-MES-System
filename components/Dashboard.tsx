@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle, Calendar, Search, Plus } from 'lucide-react';
-import { Project, ViewState } from '../types';
+import { Calendar, Megaphone, ChevronRight } from 'lucide-react';
+import { Project, ViewState, Notice } from '../types';
 
 interface DashboardProps {
   projects: Project[];
+  notices: Notice[];
   onNavigate: (view: ViewState, projectId?: string | null) => void;
 }
 
@@ -23,7 +25,7 @@ const StatCard = ({ title, value, subtext, colorClass }: any) => (
   </div>
 );
 
-export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ projects, notices, onNavigate }) => {
   // --- Stats Calculation ---
   const totalProjects = projects.length;
   const fatConfirmedProjects = projects.filter(p => p.stage === 'FAT 확정').length;
@@ -148,40 +150,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
         </div>
       </div>
 
-      {/* Bottom Section: Alerts & Schedule */}
+      {/* Bottom Section: Notices & Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Alerts */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="text-yellow-500 h-5 w-5" />
-            <h3 className="text-lg font-bold text-slate-800">주의 필요 프로젝트</h3>
+        {/* Notices (Replacing Alerts) */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+                <Megaphone className="text-blue-500 h-5 w-5" />
+                <h3 className="text-lg font-bold text-slate-800">공지사항</h3>
+            </div>
+            <button 
+                onClick={() => onNavigate('notices')} 
+                className="text-xs text-slate-500 hover:text-blue-600 font-medium flex items-center gap-0.5"
+            >
+                더보기 <ChevronRight className="h-3 w-3" />
+            </button>
           </div>
-          <div className="space-y-3">
-            {projects.filter(p => p.remarks && (p.remarks.includes('지연') || p.remarks.includes('미출도') || p.remarks.includes('경과'))).map((p, i) => (
-              <div key={p.id} className="p-3 bg-white hover:bg-slate-50 rounded-lg border-l-4 border-red-500 shadow-sm flex items-start justify-between cursor-pointer transition-colors" onClick={() => onNavigate('view', p.id)}>
-                <div>
-                  <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                     {p.items[0]?.serialNumber} 
-                     <span className="text-slate-500 font-normal">- {p.companyName}</span>
-                  </div>
-                  <div className="text-xs text-red-600 mt-1 font-medium">{p.remarks}</div>
+          <div className="space-y-0.5 flex-1">
+            {notices.slice(0, 5).map((notice) => (
+              <div 
+                key={notice.id} 
+                className="p-3 bg-white hover:bg-slate-50 rounded-lg flex items-center justify-between cursor-pointer transition-colors border-b border-slate-100 last:border-0"
+                onClick={() => onNavigate('notices')}
+              >
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="font-medium text-slate-800 text-sm truncate">{notice.title}</div>
                 </div>
+                <div className="text-xs text-slate-400 whitespace-nowrap">{notice.date}</div>
               </div>
             ))}
-            {projects.filter(p => p.remarks && (p.remarks.includes('지연') || p.remarks.includes('미출도') || p.remarks.includes('경과'))).length === 0 && (
-                <div className="text-sm text-slate-400 p-2">주의 항목이 없습니다.</div>
+            {notices.length === 0 && (
+                <div className="text-sm text-slate-400 p-2 text-center">등록된 공지사항이 없습니다.</div>
             )}
           </div>
         </div>
 
         {/* Weekly Schedule */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="text-blue-500 h-5 w-5" />
             <h3 className="text-lg font-bold text-slate-800">금주 주요 일정</h3>
           </div>
           <div className="space-y-3">
-             {projects.slice(0, 3).map((p) => (
+             {projects.slice(0, 4).map((p) => (
                 <div key={'fat'+p.id} className="p-3 bg-white rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold">{p.fatDate.substring(5)} ({['일','월','화','수','목','금','토'][new Date(p.fatDate).getDay()]})</div>
@@ -191,25 +202,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
              ))}
           </div>
         </div>
-      </div>
-
-      {/* Quick Actions Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="상단 검색바로 즉시 프로젝트 찾기" 
-            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-slate-50"
-          />
-        </div>
-        <button 
-          onClick={() => onNavigate('edit', null)}
-          className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          신규 프로젝트 등록
-        </button>
       </div>
     </div>
   );

@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail'; // This acts as Edit Page
 import { ProjectView } from './components/ProjectView'; // This acts as Read-only View Page
+import { NoticeBoard } from './components/NoticeBoard'; // New Component
 import { Layout } from './components/Layout';
-import { Project, ViewState } from './types';
-import { getProjects, saveProject, deleteProject } from './services/projectService';
+import { Project, ViewState, Notice } from './types';
+import { getProjects, saveProject, deleteProject, getNotices } from './services/projectService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Initial Data Load
@@ -18,6 +21,7 @@ const App: React.FC = () => {
     // Simulate API call
     setTimeout(() => {
       setProjects(getProjects());
+      setNotices(getNotices());
       setLoading(false);
     }, 500);
   }, []);
@@ -53,7 +57,7 @@ const App: React.FC = () => {
   return (
     <Layout currentView={currentView} onNavigate={handleNavigate}>
       {currentView === 'dashboard' && (
-        <Dashboard projects={projects} onNavigate={handleNavigate} />
+        <Dashboard projects={projects} notices={notices} onNavigate={handleNavigate} />
       )}
       {currentView === 'list' && (
         <ProjectList projects={projects} onNavigate={handleNavigate} />
@@ -73,6 +77,9 @@ const App: React.FC = () => {
           onDelete={handleDeleteProject}
           onBack={() => handleNavigate('list')}
         />
+      )}
+      {currentView === 'notices' && (
+        <NoticeBoard notices={notices} />
       )}
     </Layout>
   );

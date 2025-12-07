@@ -1,5 +1,5 @@
 
-import { Project, ProjectItem, TechnicalSpec, HistoryLog } from '../types';
+import { Project, ProjectItem, TechnicalSpec, HistoryLog, Notice } from '../types';
 
 const MOCK_PROJECTS: Project[] = [
   {
@@ -119,12 +119,24 @@ const MOCK_PROJECTS: Project[] = [
   }
 ];
 
+const MOCK_NOTICES: Notice[] = [
+  { id: 'n1', title: '12월 정기 시스템 점검 안내', author: '관리자', date: '2024-12-01', content: '서버 점검으로 인해...' },
+  { id: 'n2', title: '신규 프로젝트 등록 프로세스 변경', author: 'PMO', date: '2024-11-28', content: '프로세스가 변경되었습니다.' },
+  { id: 'n3', title: '연말 휴가 일정 취합', author: '인사팀', date: '2024-11-25', content: '휴가 일정을 등록해주세요.' },
+  { id: 'n4', title: '보안 업데이트 공지', author: 'IT팀', date: '2024-11-20', content: '필수 보안 업데이트...' },
+  { id: 'n5', title: '사내 식당 메뉴 설문조사', author: '총무팀', date: '2024-11-15', content: '설문조사에 참여해주세요.' },
+];
+
 export const getProjects = (): Project[] => {
   const stored = localStorage.getItem('projects');
   if (stored) {
     return JSON.parse(stored);
   }
   return MOCK_PROJECTS;
+};
+
+export const getNotices = (): Notice[] => {
+  return MOCK_NOTICES;
 };
 
 export const saveProject = (projects: Project[], updated: Project): Project[] => {

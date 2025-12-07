@@ -1,5 +1,5 @@
 
-export type ViewState = 'dashboard' | 'list' | 'edit' | 'view';
+export type ViewState = 'dashboard' | 'list' | 'edit' | 'view' | 'notices';
 
 export type Stage = 'FAT 예정' | 'FAT 확정' | 'FAT 완료' | '납기 확정' | '납기 완료';
 
@@ -49,4 +49,12 @@ export interface DashboardStats {
   inProgress: number;
   thisWeekDelivery: number;
   delayed: number;
+}
+
+export interface Notice {
+  id: string;
+  title: string;
+  author: string;
+  date: string;
+  content: string;
 }
