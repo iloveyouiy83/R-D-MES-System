@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Project, ViewState, TaskStatus } from '../types';
 
 interface ProjectListProps {
@@ -29,6 +29,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
   const [filterBOM, setFilterBOM] = useState('');
   const [filterDrawing, setFilterDrawing] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
+  
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   // Filtering Logic
   const filteredProjects = useMemo(() => {
@@ -50,6 +53,66 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
     });
   }, [projects, searchTerm, filterStage, filterPM, filterPIC, filterBOM, filterDrawing, filterProgram]);
 
+  // Sorting Logic
+  const sortedProjects = useMemo(() => {
+    let sortableProjects = [...filteredProjects];
+    if (sortConfig !== null) {
+      sortableProjects.sort((a, b) => {
+        const getSortValue = (project: Project, key: string) => {
+            const getStatusWeight = (status: string) => {
+                const map: Record<string, number> = { '미착수': 1, '진행중': 2, '완료': 3 };
+                return map[status] || 0;
+            };
+            const getStageWeight = (stage: string) => {
+                const map: Record<string, number> = { 'FAT 예정': 1, 'FAT 확정': 2, 'FAT 완료': 3, '납기 확정': 4, '납기 완료': 5 };
+                return map[stage] || 0;
+            };
+
+            switch (key) {
+                case 'companyName': return project.companyName;
+                case 'schedule': return project.fatDate || project.deliveryDate;
+                case 'pm': return project.pm;
+                case 'stage': return getStageWeight(project.stage);
+                case 'serialNumber': return project.items[0]?.serialNumber || '';
+                case 'pic': return project.items[0]?.pic || '';
+                case 'bomStatus': return getStatusWeight(project.items[0]?.bomStatus || '');
+                case 'drawingStatus': return getStatusWeight(project.items[0]?.drawingStatus || '');
+                case 'programStatus': return getStatusWeight(project.items[0]?.programStatus || '');
+                default: return '';
+            }
+        };
+
+        const aValue = getSortValue(a, sortConfig.key);
+        const bValue = getSortValue(b, sortConfig.key);
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableProjects;
+  }, [filteredProjects, sortConfig]);
+
+  // Sorting Helper
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig?.key !== columnKey) return <ArrowUpDown className="h-3 w-3 ml-1 text-slate-300 opacity-50 group-hover:opacity-100" />;
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="h-3 w-3 ml-1 text-blue-600" />
+      : <ArrowDown className="h-3 w-3 ml-1 text-blue-600" />;
+  };
+
   // Unique values for dropdowns
   const uniquePMs = Array.from(new Set(projects.map(p => p.pm))).filter(Boolean).sort();
   const uniquePICs = Array.from(new Set(projects.flatMap(p => p.items.map(i => i.pic)))).filter(Boolean).sort();
@@ -57,14 +120,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
   // Pagination
   const itemsPerPage = 5;
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedProjects.length / itemsPerPage);
   
   // Reset page when filters change
   useMemo(() => {
      setCurrentPage(1);
-  }, [filteredProjects.length]);
+  }, [sortedProjects.length]);
 
-  const currentData = filteredProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentData = sortedProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const TaskFilterOptions = () => (
     <>
@@ -166,13 +229,63 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
         <table className="w-full text-sm text-left text-slate-600">
           <thead className="text-xs text-slate-700 bg-slate-100 border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3 font-semibold w-40">업체명/국가</th>
-              <th className="px-4 py-3 font-semibold w-32">일정(FAT/납기)</th>
-              <th className="px-2 py-3 font-semibold w-20">PM</th>
-              <th className="px-2 py-3 font-semibold w-24">진행 단계</th>
-              <th className="px-4 py-3 font-semibold w-32 border-l border-slate-200">☑ 제작번호</th>
-              <th className="px-2 py-3 font-semibold w-20">담당자</th>
-              <th className="px-2 py-3 font-semibold text-center" colSpan={3}>확인 사항(1차BOM/도면/프로그램)</th>
+              <th 
+                className="px-4 py-3 font-semibold w-40 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('companyName')}
+              >
+                 <div className="flex items-center">업체명/국가 <SortIcon columnKey="companyName"/></div>
+              </th>
+              <th 
+                className="px-4 py-3 font-semibold w-32 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('schedule')}
+              >
+                <div className="flex items-center">일정(FAT/납기) <SortIcon columnKey="schedule"/></div>
+              </th>
+              <th 
+                className="px-2 py-3 font-semibold w-20 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('pm')}
+              >
+                <div className="flex items-center">PM <SortIcon columnKey="pm"/></div>
+              </th>
+              <th 
+                className="px-2 py-3 font-semibold w-24 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('stage')}
+              >
+                <div className="flex items-center">진행 단계 <SortIcon columnKey="stage"/></div>
+              </th>
+              <th 
+                className="px-4 py-3 font-semibold w-32 border-l border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('serialNumber')}
+              >
+                <div className="flex items-center">☑ 제작번호 <SortIcon columnKey="serialNumber"/></div>
+              </th>
+              <th 
+                className="px-2 py-3 font-semibold w-20 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('pic')}
+              >
+                <div className="flex items-center">담당자 <SortIcon columnKey="pic"/></div>
+              </th>
+              
+              {/* Separate Status Headers for sorting */}
+              <th 
+                className="px-2 py-3 font-semibold text-center w-24 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('bomStatus')}
+              >
+                <div className="flex items-center justify-center">1차BOM <SortIcon columnKey="bomStatus"/></div>
+              </th>
+              <th 
+                className="px-2 py-3 font-semibold text-center w-24 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('drawingStatus')}
+              >
+                <div className="flex items-center justify-center">도면 출도 <SortIcon columnKey="drawingStatus"/></div>
+              </th>
+              <th 
+                className="px-2 py-3 font-semibold text-center w-24 cursor-pointer hover:bg-slate-200 transition-colors group"
+                onClick={() => requestSort('programStatus')}
+              >
+                <div className="flex items-center justify-center">프로그램 <SortIcon columnKey="programStatus"/></div>
+              </th>
+
               <th className="px-2 py-3 font-semibold w-20 text-center">관리</th>
             </tr>
           </thead>
@@ -241,19 +354,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-slate-400 mb-0.5">1차BOM</span>
+                          {/* Label removed as header is now explicit */}
                           <StatusBadge status={item.bomStatus} />
                         </div>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-slate-400 mb-0.5">도면 출도</span>
                           <StatusBadge status={item.drawingStatus} />
                         </div>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-slate-400 mb-0.5">프로그램</span>
                           <StatusBadge status={item.programStatus} />
                         </div>
                       </td>
