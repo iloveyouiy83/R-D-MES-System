@@ -1,0 +1,5 @@
+{
+  "name": "연구소 생산관리_Rev2",
+  "description": "A web-based platform for managing manufacturing production schedules, project tracking, and real-time collaboration, replacing legacy Excel-based workflows.",
+  "requestFramePermissions": []
+}
