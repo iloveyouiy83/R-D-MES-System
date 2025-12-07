@@ -27,8 +27,29 @@ const getCalculatedStatus = (dbStatus: TaskStatus, dateStr?: string): '완료' |
   return diffDays > 90 ? '정상' : '지연';
 };
 
+const getDDay = (dateString?: string) => {
+  if (!dateString) return '';
+  const target = new Date(dateString);
+  const today = new Date();
+  target.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+  
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'D-Day';
+  return diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
+};
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '-';
+  // Assuming dateString is YYYY-MM-DD
+  return dateString.replace(/-/g, '. ') + '.';
+};
+
 const StatusBadge = ({ status, date }: { status: TaskStatus, date?: string }) => {
   const calculated = getCalculatedStatus(status, date);
+  const dday = date ? getDDay(date) : '';
   
   const styles = {
     '완료': 'bg-green-100 text-green-700 border-green-200',
@@ -38,9 +59,16 @@ const StatusBadge = ({ status, date }: { status: TaskStatus, date?: string }) =>
   };
 
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded border font-bold whitespace-nowrap ${styles[calculated]}`}>
-      {calculated}
-    </span>
+    <div className="flex items-center gap-2 justify-center">
+      <span className={`text-[10px] px-2 py-0.5 rounded border font-bold whitespace-nowrap ${styles[calculated]}`}>
+        {calculated}
+      </span>
+      {status !== '완료' && date && (
+          <span className={`text-[10px] font-bold whitespace-nowrap ${calculated === '지연' ? 'text-red-500' : 'text-slate-400'}`}>
+             {dday}
+          </span>
+      )}
+    </div>
   );
 };
 
@@ -181,9 +209,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
           </button>
         </div>
         
-        {/* Filter Bar */}
-        <div className="flex flex-col xl:flex-row gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <div className="relative flex-grow">
+        {/* Filter Bar - Reordered and Sized as requested */}
+        <div className="flex flex-col xl:flex-row gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 items-start xl:items-center">
+          <div className="relative w-full xl:w-64 shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input 
               type="text" 
@@ -194,6 +222,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
             />
           </div>
           <div className="flex flex-wrap gap-2">
+            {/* Reordered to match table columns roughly: PM, Stage, PIC */}
             <select 
               className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[100px]"
               value={filterStage}
@@ -345,11 +374,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
                             <div className="flex flex-col gap-1 text-xs">
                               <span className="flex justify-between w-full gap-2">
                                 <span className="text-slate-500 font-bold">FAT</span> 
-                                <span className="font-mono">{project.fatDate ? project.fatDate.substring(5) : '-'}</span>
+                                <span className="font-mono">{formatDate(project.fatDate)}</span>
                               </span>
                               <span className="flex justify-between w-full gap-2">
                                 <span className="text-slate-500 font-bold">납기</span> 
-                                <span className="font-mono">{project.deliveryDate ? project.deliveryDate.substring(5) : '-'}</span>
+                                <span className="font-mono">{formatDate(project.deliveryDate)}</span>
                               </span>
                             </div>
                           </td>
