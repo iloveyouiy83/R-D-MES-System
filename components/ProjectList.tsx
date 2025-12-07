@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Project, ViewState, TaskStatus } from '../types';
@@ -25,6 +26,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
   const [filterStage, setFilterStage] = useState('');
   const [filterPM, setFilterPM] = useState('');
   const [filterPIC, setFilterPIC] = useState('');
+  const [filterBOM, setFilterBOM] = useState('');
+  const [filterDrawing, setFilterDrawing] = useState('');
+  const [filterProgram, setFilterProgram] = useState('');
 
   // Filtering Logic
   const filteredProjects = useMemo(() => {
@@ -37,19 +41,39 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
       const matchesPM = filterPM ? p.pm === filterPM : true;
       const matchesPIC = filterPIC ? p.items.some(i => i.pic === filterPIC) : true;
 
-      return matchesSearch && matchesStage && matchesPM && matchesPIC;
+      // Check if ANY item in the project matches the task status filters
+      const matchesBOM = filterBOM ? p.items.some(i => i.bomStatus === filterBOM) : true;
+      const matchesDrawing = filterDrawing ? p.items.some(i => i.drawingStatus === filterDrawing) : true;
+      const matchesProgram = filterProgram ? p.items.some(i => i.programStatus === filterProgram) : true;
+
+      return matchesSearch && matchesStage && matchesPM && matchesPIC && matchesBOM && matchesDrawing && matchesProgram;
     });
-  }, [projects, searchTerm, filterStage, filterPM, filterPIC]);
+  }, [projects, searchTerm, filterStage, filterPM, filterPIC, filterBOM, filterDrawing, filterProgram]);
 
   // Unique values for dropdowns
-  const uniquePMs = Array.from(new Set(projects.map(p => p.pm)));
-  const uniquePICs = Array.from(new Set(projects.flatMap(p => p.items.map(i => i.pic))));
+  const uniquePMs = Array.from(new Set(projects.map(p => p.pm))).filter(Boolean).sort();
+  const uniquePICs = Array.from(new Set(projects.flatMap(p => p.items.map(i => i.pic)))).filter(Boolean).sort();
 
   // Pagination
   const itemsPerPage = 5;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  
+  // Reset page when filters change
+  useMemo(() => {
+     setCurrentPage(1);
+  }, [filteredProjects.length]);
+
   const currentData = filteredProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const TaskFilterOptions = () => (
+    <>
+      <option value="">전체</option>
+      <option value="완료">완료</option>
+      <option value="진행중">진행중</option>
+      <option value="미착수">미착수</option>
+    </>
+  );
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
@@ -88,6 +112,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
               <option value="FAT 예정">FAT 예정</option>
               <option value="FAT 확정">FAT 확정</option>
               <option value="FAT 완료">FAT 완료</option>
+              <option value="납기 확정">납기 확정</option>
+              <option value="납기 완료">납기 완료</option>
             </select>
             <select 
               className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]"
@@ -105,15 +131,31 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
               <option value="">[담당자▼]</option>
               {uniquePICs.map(pic => <option key={pic} value={pic}>{pic}</option>)}
             </select>
-            {/* Mock Filters for tasks */}
-            <select className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]" disabled>
-              <option>[1차BOM▼]</option>
+            
+            {/* Task Filters */}
+            <select 
+              className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]"
+              value={filterBOM}
+              onChange={(e) => setFilterBOM(e.target.value)}
+            >
+              <option value="">[1차BOM▼]</option>
+              <TaskFilterOptions />
             </select>
-            <select className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]" disabled>
-              <option>[도면 출도▼]</option>
+            <select 
+              className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]"
+              value={filterDrawing}
+              onChange={(e) => setFilterDrawing(e.target.value)}
+            >
+              <option value="">[도면 출도▼]</option>
+              <TaskFilterOptions />
             </select>
-            <select className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]" disabled>
-              <option>[프로그램▼]</option>
+            <select 
+              className="px-2 py-1.5 text-xs border border-slate-300 rounded-md bg-white min-w-[80px]"
+              value={filterProgram}
+              onChange={(e) => setFilterProgram(e.target.value)}
+            >
+              <option value="">[프로그램▼]</option>
+              <TaskFilterOptions />
             </select>
           </div>
         </div>
