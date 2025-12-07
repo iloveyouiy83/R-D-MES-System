@@ -207,9 +207,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700">{label}</label>
-                <div className={`text-[10px] font-bold px-2 py-0.5 rounded border ${status === '완료' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                    {status}
-                </div>
             </div>
             <div className="flex flex-col gap-2">
                 <CompleteCheckbox 
