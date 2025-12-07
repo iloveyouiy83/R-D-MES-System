@@ -3,7 +3,7 @@ export type ViewState = 'dashboard' | 'list' | 'edit' | 'view';
 
 export type Stage = 'FAT 예정' | 'FAT 확정' | 'FAT 완료' | '납기 확정' | '납기 완료';
 
-export type TaskStatus = '완료' | '진행중' | '미착수';
+export type TaskStatus = '완료' | '미지정';
 
 export interface TechnicalSpec {
   id: string;

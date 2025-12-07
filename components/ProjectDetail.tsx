@@ -40,14 +40,6 @@ const getDDayStyle = (dateString?: string, status?: string) => {
   if (dday.startsWith('D+')) return 'text-red-600 font-bold'; 
   if (dday === 'D-Day') return 'text-red-600 font-bold';
   
-  // Rule: D-Day < 90 is Delayed (Risk), > 90 is Normal
-  // But strictly based on the prompt "D-DAY>90 : 정상 , D-DAY < 90 : 지연"
-  // Usually this means if Days Remaining < 90 it is risky.
-  
-  const days = parseInt(dday.replace('D-', ''));
-  // Note: if D+, parseInt handles it? No, dday logic above produces D+5.
-  // We need distinct logic for styling based on the calculated status
-  
   return 'text-blue-600 font-medium';
 };
 
@@ -87,6 +79,9 @@ const DateField = ({ value, onChange, className }: { value: string | undefined, 
 
   return (
     <div className={`relative ${className}`}>
+        <div className="absolute inset-y-0 right-0 w-10 flex items-center justify-center pointer-events-none z-10">
+            <CalendarIcon className="h-4 w-4 text-slate-500" />
+        </div>
         <input 
             ref={inputRef}
             type="date"
@@ -95,9 +90,6 @@ const DateField = ({ value, onChange, className }: { value: string | undefined, 
             onClick={handleClick}
             className={`${INPUT_CLASS} pr-10 cursor-pointer relative z-0`}
         />
-        <div className="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-500 pointer-events-none z-10">
-            <CalendarIcon className="h-4 w-4" />
-        </div>
     </div>
   );
 };
@@ -157,9 +149,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
       id: Date.now().toString(),
       serialNumber: '',
       pic: '',
-      bomStatus: '미착수',
-      drawingStatus: '미착수',
-      programStatus: '미착수',
+      bomStatus: '미지정',
+      drawingStatus: '미지정',
+      programStatus: '미지정',
       techSpecs: []
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
@@ -222,7 +214,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
             <div className="flex flex-col gap-2">
                 <CompleteCheckbox 
                     isCompleted={status === '완료'} 
-                    onChange={(checked) => onStatusChange(checked ? '완료' : '미착수')} 
+                    onChange={(checked) => onStatusChange(checked ? '완료' : '미지정')} 
                 />
                 <DateField
                     value={date || ''}

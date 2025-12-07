@@ -103,9 +103,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
                 case 'stage': return getStageWeight(project.stage);
                 case 'serialNumber': return project.items[0]?.serialNumber || '';
                 case 'pic': return project.items[0]?.pic || '';
-                case 'bomStatus': return getStatusWeight(project.items[0]?.bomStatus || '미착수', project.items[0]?.bomDate);
-                case 'drawingStatus': return getStatusWeight(project.items[0]?.drawingStatus || '미착수', project.items[0]?.drawingDate);
-                case 'programStatus': return getStatusWeight(project.items[0]?.programStatus || '미착수', project.items[0]?.programDate);
+                case 'bomStatus': return getStatusWeight(project.items[0]?.bomStatus || '미지정', project.items[0]?.bomDate);
+                case 'drawingStatus': return getStatusWeight(project.items[0]?.drawingStatus || '미지정', project.items[0]?.drawingDate);
+                case 'programStatus': return getStatusWeight(project.items[0]?.programStatus || '미지정', project.items[0]?.programDate);
                 default: return '';
             }
         };

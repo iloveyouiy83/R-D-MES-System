@@ -17,8 +17,8 @@ const MOCK_PROJECTS: Project[] = [
         serialNumber: 'PSM000230', 
         pic: '김승윤', 
         bomStatus: '완료', bomDate: '2024-09-15',
-        drawingStatus: '진행중', drawingDate: '2024-10-01',
-        programStatus: '진행중', programDate: '2024-10-10',
+        drawingStatus: '미지정', drawingDate: '2024-10-01',
+        programStatus: '미지정', programDate: '2024-10-10',
         techSpecs: [
           { id: 't1', content: '전압 사양: 220V 60Hz', isCompleted: true },
           { id: 't2', content: '안전 규격: CE 인증', isCompleted: false }
@@ -30,7 +30,7 @@ const MOCK_PROJECTS: Project[] = [
         pic: '이규빈', 
         bomStatus: '완료', bomDate: '2024-09-20',
         drawingStatus: '완료', drawingDate: '2024-10-05',
-        programStatus: '미착수', programDate: '2024-10-20',
+        programStatus: '미지정', programDate: '2024-10-20',
         techSpecs: []
       },
       { 
@@ -38,8 +38,8 @@ const MOCK_PROJECTS: Project[] = [
         serialNumber: 'TTM000105', 
         pic: '박승현', 
         bomStatus: '완료', bomDate: '2024-09-22',
-        drawingStatus: '진행중', drawingDate: '2024-10-08',
-        programStatus: '미착수', programDate: '2024-10-25',
+        drawingStatus: '미지정', drawingDate: '2024-10-08',
+        programStatus: '미지정', programDate: '2024-10-25',
         techSpecs: []
       },
     ],
@@ -62,8 +62,8 @@ const MOCK_PROJECTS: Project[] = [
         serialNumber: 'PSM000232', 
         pic: '김승윤', 
         bomStatus: '완료', bomDate: '2024-09-25',
-        drawingStatus: '진행중', drawingDate: '2024-10-10',
-        programStatus: '진행중', programDate: '2024-10-15',
+        drawingStatus: '미지정', drawingDate: '2024-10-10',
+        programStatus: '미지정', programDate: '2024-10-15',
         techSpecs: []
       },
       { 
@@ -72,7 +72,7 @@ const MOCK_PROJECTS: Project[] = [
         pic: '이규빈', 
         bomStatus: '완료', bomDate: '2024-09-28',
         drawingStatus: '완료', drawingDate: '2024-10-12',
-        programStatus: '미착수', programDate: '2024-10-20',
+        programStatus: '미지정', programDate: '2024-10-20',
         techSpecs: []
       },
       { 
@@ -80,8 +80,8 @@ const MOCK_PROJECTS: Project[] = [
         serialNumber: 'TTM000107', 
         pic: '박승현', 
         bomStatus: '완료', bomDate: '2024-10-01',
-        drawingStatus: '진행중', drawingDate: '2024-10-15',
-        programStatus: '미착수', programDate: '2024-10-25',
+        drawingStatus: '미지정', drawingDate: '2024-10-15',
+        programStatus: '미지정', programDate: '2024-10-25',
         techSpecs: []
       },
     ],
@@ -97,7 +97,7 @@ const MOCK_PROJECTS: Project[] = [
     deliveryDate: '2024-12-25',
     remarks: '검수일 2일 경과',
     items: [
-      { id: '3-1', serialNumber: 'H2M000291', pic: '최민수', bomStatus: '미착수', drawingStatus: '미착수', programStatus: '미착수', techSpecs: [] },
+      { id: '3-1', serialNumber: 'H2M000291', pic: '최민수', bomStatus: '미지정', drawingStatus: '미지정', programStatus: '미지정', techSpecs: [] },
     ],
     history: [],
   },
@@ -111,7 +111,7 @@ const MOCK_PROJECTS: Project[] = [
     deliveryDate: '2024-12-11',
     remarks: 'BOM 미출도 (출고 D-5)',
     items: [
-      { id: '4-1', serialNumber: 'H2M000177', pic: '정수빈', bomStatus: '미착수', drawingStatus: '완료', programStatus: '완료', techSpecs: [] },
+      { id: '4-1', serialNumber: 'H2M000177', pic: '정수빈', bomStatus: '미지정', drawingStatus: '완료', programStatus: '완료', techSpecs: [] },
       { id: '4-2', serialNumber: 'H2M000285', pic: '정수빈', bomStatus: '완료', drawingStatus: '완료', programStatus: '완료', techSpecs: [] },
       { id: '4-3', serialNumber: 'H2M000292', pic: '정수빈', bomStatus: '완료', drawingStatus: '완료', programStatus: '완료', techSpecs: [] },
     ],
@@ -162,9 +162,9 @@ export const generateEmptyProject = (): Project => ({
       id: Date.now().toString(), 
       serialNumber: '', 
       pic: '', 
-      bomStatus: '미착수', bomDate: '',
-      drawingStatus: '미착수', drawingDate: '',
-      programStatus: '미착수', programDate: '',
+      bomStatus: '미지정', bomDate: '',
+      drawingStatus: '미지정', drawingDate: '',
+      programStatus: '미지정', programDate: '',
       techSpecs: []
     }
   ],
