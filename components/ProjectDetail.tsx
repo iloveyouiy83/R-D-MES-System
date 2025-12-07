@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, Trash2, Plus, X, CheckCircle, Circle, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Plus, X, CheckCircle, Circle, Calendar as CalendarIcon, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import { Project, ProjectItem, TechnicalSpec, TaskStatus } from '../types';
 import { generateEmptyProject } from '../services/projectService';
 
@@ -21,7 +22,6 @@ const getDDay = (dateString?: string) => {
   if (!dateString) return '';
   const target = new Date(dateString);
   const today = new Date();
-  // Reset time to compare dates only
   target.setHours(0,0,0,0);
   today.setHours(0,0,0,0);
   
@@ -37,13 +37,33 @@ const getDDayStyle = (dateString?: string, status?: string) => {
   if (!dateString) return 'text-slate-400';
   
   const dday = getDDay(dateString);
-  if (dday.startsWith('D+')) return 'text-red-600 font-bold'; // Passed
+  if (dday.startsWith('D+')) return 'text-red-600 font-bold'; 
   if (dday === 'D-Day') return 'text-red-600 font-bold';
-  // Check for imminent (e.g. within 7 days)
+  
+  // Rule: D-Day < 90 is Delayed (Risk), > 90 is Normal
+  // But strictly based on the prompt "D-DAY>90 : 정상 , D-DAY < 90 : 지연"
+  // Usually this means if Days Remaining < 90 it is risky.
+  
   const days = parseInt(dday.replace('D-', ''));
-  if (days <= 7) return 'text-orange-600 font-bold';
+  // Note: if D+, parseInt handles it? No, dday logic above produces D+5.
+  // We need distinct logic for styling based on the calculated status
   
   return 'text-blue-600 font-medium';
+};
+
+const getCalculatedStatusLabel = (dateString?: string, status?: string) => {
+    if (status === '완료') return { text: '완료', color: 'text-green-600' };
+    if (!dateString) return { text: '미설정', color: 'text-slate-400' };
+
+    const target = new Date(dateString);
+    const today = new Date();
+    target.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 90) return { text: '정상', color: 'text-blue-600' };
+    return { text: '지연', color: 'text-red-600' };
 };
 
 // --- Sub Components ---
@@ -52,13 +72,10 @@ const DateField = ({ value, onChange, className }: { value: string | undefined, 
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-      // Prevent label clicks or bubble events triggering weird behaviors
-      // but ensure we can focus/show picker.
-      
       try {
           if (inputRef.current && typeof inputRef.current.showPicker === 'function') {
             inputRef.current.showPicker();
-            e.preventDefault(); // Stop default only if we successfully manually triggered picker
+            e.preventDefault();
           } else {
              inputRef.current?.focus();
           }
@@ -78,7 +95,6 @@ const DateField = ({ value, onChange, className }: { value: string | undefined, 
             onClick={handleClick}
             className={`${INPUT_CLASS} pr-10 cursor-pointer relative z-0`}
         />
-        {/* Icon wrapper - pointer-events-none ensures clicks pass through to input */}
         <div className="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-500 pointer-events-none z-10">
             <CalendarIcon className="h-4 w-4" />
         </div>
@@ -99,17 +115,18 @@ const SelectField = ({ value, onChange, options, className }: { value: string, o
   </div>
 );
 
-const StatusBadge = ({ status }: { status: TaskStatus }) => {
-    let colorClass = 'bg-slate-100 text-slate-600 border-slate-200';
-    if (status === '완료') colorClass = 'bg-green-100 text-green-700 border-green-200';
-    if (status === '진행중') colorClass = 'bg-blue-100 text-blue-700 border-blue-200';
-    
-    return (
-        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${colorClass}`}>
-            {status}
-        </span>
-    );
-};
+const CompleteCheckbox = ({ isCompleted, onChange }: { isCompleted: boolean, onChange: (val: boolean) => void }) => (
+    <div 
+        onClick={() => onChange(!isCompleted)}
+        className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all select-none
+        ${isCompleted 
+            ? 'bg-green-50 border-green-200 text-green-700' 
+            : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}
+    >
+        {isCompleted ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+        <span className="text-sm font-bold">{isCompleted ? '완료' : '미완료'}</span>
+    </div>
+);
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, projects, onSave, onDelete, onBack }) => {
   const [formData, setFormData] = useState<Project>(generateEmptyProject());
@@ -154,7 +171,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
     setFormData(prev => ({ ...prev, items: newItems }));
   };
 
-  // --- Technical Info Handlers (Nested in Items) ---
   const handleAddTechSpec = (itemIndex: number) => {
     const newSpec: TechnicalSpec = { 
         id: Date.now().toString(), 
@@ -184,6 +200,41 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
     if (window.confirm('프로젝트 정보를 저장하시겠습니까?')) {
       onSave(formData);
     }
+  };
+
+  const StatusSection = ({ label, status, date, onStatusChange, onDateChange }: { 
+      label: string, 
+      status: TaskStatus, 
+      date?: string,
+      onStatusChange: (val: TaskStatus) => void,
+      onDateChange: (val: string) => void
+  }) => {
+      const calcStatus = getCalculatedStatusLabel(date, status);
+      
+      return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700">{label}</label>
+                <div className={`text-[10px] font-bold px-2 py-0.5 rounded border ${status === '완료' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                    {status}
+                </div>
+            </div>
+            <div className="flex flex-col gap-2">
+                <CompleteCheckbox 
+                    isCompleted={status === '완료'} 
+                    onChange={(checked) => onStatusChange(checked ? '완료' : '미착수')} 
+                />
+                <DateField
+                    value={date || ''}
+                    onChange={e => onDateChange(e.target.value)}
+                />
+            </div>
+            <div className="flex justify-between items-center text-xs font-medium border-t border-slate-200 pt-2 mt-1">
+                <span className={calcStatus.color}>{calcStatus.text}</span>
+                <span className="text-slate-400">{date ? (status === '완료' ? '완료됨' : getDDay(date)) : '-'}</span>
+            </div>
+        </div>
+      );
   };
 
   return (
@@ -220,9 +271,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
           {/* Left Column: Common Info & History */}
           <div className="lg:col-span-4 space-y-6">
               {/* Common Info */}
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-                   <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
+              <section className="bg-white rounded-xl border border-l-4 border-slate-200 border-l-blue-600 shadow-sm overflow-hidden">
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
                    <h3 className="text-base font-bold text-slate-800">공통 정보</h3>
                 </div>
                 
@@ -300,9 +350,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
               </section>
 
               {/* Remarks */}
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-                   <div className="w-1 h-5 bg-slate-800 rounded-full"></div>
+              <section className="bg-white rounded-xl border border-l-4 border-slate-200 border-l-slate-800 shadow-sm overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
                    <h3 className="text-base font-bold text-slate-800">특이사항</h3>
                  </div>
                  <div className="p-6">
@@ -317,9 +366,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
               </section>
 
               {/* History */}
-               <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-                    <div className="w-1 h-5 bg-slate-400 rounded-full"></div>
+               <section className="bg-white rounded-xl border border-l-4 border-slate-200 border-l-slate-400 shadow-sm overflow-hidden">
+                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <h3 className="text-base font-bold text-slate-800">변경 이력 (최근 5건)</h3>
                   </div>
                   <div className="p-6">
@@ -345,8 +393,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
           <div className="lg:col-span-8 space-y-6">
               <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-[136px] z-10">
                    <div className="flex items-center gap-2">
-                       <div className="w-1 h-5 bg-red-600 rounded-full"></div>
-                       <h3 className="text-base font-bold text-slate-800">확인 사항 (설비 목록)</h3>
+                       <h3 className="text-base font-bold text-slate-800 pl-2 border-l-4 border-red-600">확인 사항 (설비 목록)</h3>
                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full ml-2">
                            총 {formData.items.length}대
                        </span>
@@ -362,9 +409,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
              <div className="space-y-6">
                {formData.items.map((item, idx) => (
                  <div key={item.id} className="bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
-                    {/* Item Top Bar */}
                     <div className="h-1.5 w-full bg-red-500"></div>
-                    
                     <div className="p-6">
                         <div className="flex justify-between items-start mb-6">
                              <div className="flex items-center gap-3">
@@ -407,73 +452,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, project
                           </div>
                         </div>
                         
-                        {/* Status Columns */}
+                        {/* Status Columns with New Logic */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-5 bg-slate-50/50 rounded-xl border border-slate-100">
-                            {/* BOM Status */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-700">1차 BOM</label>
-                                    <StatusBadge status={item.bomStatus} />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <SelectField 
-                                        value={item.bomStatus}
-                                        onChange={e => handleItemChange(idx, 'bomStatus', e.target.value)}
-                                        options={['미착수', '진행중', '완료']}
-                                    />
-                                    <DateField
-                                        value={item.bomDate || ''}
-                                        onChange={e => handleItemChange(idx, 'bomDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className={`text-right text-xs font-medium border-t border-slate-200 pt-2 ${getDDayStyle(item.bomDate, item.bomStatus)}`}>
-                                    {item.bomDate ? (item.bomStatus === '완료' ? '완료됨' : `${getDDay(item.bomDate)}`) : '-'}
-                                </div>
-                            </div>
-
-                            {/* Drawing Status */}
-                            <div className="space-y-3">
-                                 <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-700">도면 출도</label>
-                                    <StatusBadge status={item.drawingStatus} />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <SelectField 
-                                        value={item.drawingStatus}
-                                        onChange={e => handleItemChange(idx, 'drawingStatus', e.target.value)}
-                                        options={['미착수', '진행중', '완료']}
-                                    />
-                                    <DateField
-                                        value={item.drawingDate || ''}
-                                        onChange={e => handleItemChange(idx, 'drawingDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className={`text-right text-xs font-medium border-t border-slate-200 pt-2 ${getDDayStyle(item.drawingDate, item.drawingStatus)}`}>
-                                    {item.drawingDate ? (item.drawingStatus === '완료' ? '완료됨' : `${getDDay(item.drawingDate)}`) : '-'}
-                                </div>
-                            </div>
-
-                             {/* Program Status */}
-                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-700">프로그램</label>
-                                    <StatusBadge status={item.programStatus} />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <SelectField 
-                                        value={item.programStatus}
-                                        onChange={e => handleItemChange(idx, 'programStatus', e.target.value)}
-                                        options={['미착수', '진행중', '완료']}
-                                    />
-                                    <DateField
-                                        value={item.programDate || ''}
-                                        onChange={e => handleItemChange(idx, 'programDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className={`text-right text-xs font-medium border-t border-slate-200 pt-2 ${getDDayStyle(item.programDate, item.programStatus)}`}>
-                                    {item.programDate ? (item.programStatus === '완료' ? '완료됨' : `${getDDay(item.programDate)}`) : '-'}
-                                </div>
-                            </div>
+                            <StatusSection 
+                                label="1차 BOM" 
+                                status={item.bomStatus} 
+                                date={item.bomDate}
+                                onStatusChange={val => handleItemChange(idx, 'bomStatus', val)}
+                                onDateChange={val => handleItemChange(idx, 'bomDate', val)}
+                            />
+                            <StatusSection 
+                                label="도면 출도" 
+                                status={item.drawingStatus} 
+                                date={item.drawingDate}
+                                onStatusChange={val => handleItemChange(idx, 'drawingStatus', val)}
+                                onDateChange={val => handleItemChange(idx, 'drawingDate', val)}
+                            />
+                            <StatusSection 
+                                label="프로그램" 
+                                status={item.programStatus} 
+                                date={item.programDate}
+                                onStatusChange={val => handleItemChange(idx, 'programStatus', val)}
+                                onDateChange={val => handleItemChange(idx, 'programDate', val)}
+                            />
                         </div>
 
                         {/* Technical Specs */}

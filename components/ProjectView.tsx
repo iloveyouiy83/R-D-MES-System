@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ArrowLeft, CheckSquare, Square, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Calendar, Clock, CheckCircle } from 'lucide-react';
 import { Project, TaskStatus } from '../types';
 
 interface ProjectViewProps {
@@ -23,16 +24,19 @@ const getDDay = (dateString?: string) => {
   return diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
 };
 
-const getDDayStyle = (dateString?: string, status?: string) => {
-  if (status === '완료') return 'text-slate-400 font-normal';
-  if (!dateString) return 'text-slate-400';
-  
-  const dday = getDDay(dateString);
-  if (dday.startsWith('D+')) return 'text-red-600 font-bold'; 
-  if (dday === 'D-Day') return 'text-red-600 font-bold';
-  const days = parseInt(dday.replace('D-', ''));
-  if (days <= 7) return 'text-orange-600 font-bold';
-  return 'text-blue-600 font-medium';
+const getCalculatedStatusLabel = (dateString?: string, status?: string) => {
+    if (status === '완료') return { text: '완료', color: 'bg-green-50 text-green-700 border-green-200' };
+    if (!dateString) return { text: '미설정', color: 'bg-slate-50 text-slate-400 border-slate-200' };
+
+    const target = new Date(dateString);
+    const today = new Date();
+    target.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 90) return { text: '정상', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+    return { text: '지연', color: 'bg-red-50 text-red-700 border-red-200' };
 };
 
 // --- Sub Components ---
@@ -47,24 +51,25 @@ const StatusCheckbox = ({ label, isChecked, colorClass }: { label: string, isChe
 );
 
 const TaskStatusDisplay = ({ label, status, date }: { label: string, status: TaskStatus, date?: string }) => {
+    const calculated = getCalculatedStatusLabel(date, status);
+
     return (
         <div className="flex flex-col gap-2 p-3 bg-slate-50 rounded border border-slate-100">
             <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-700">{label}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                    status === '완료' ? 'bg-green-50 border-green-200 text-green-700' :
-                    status === '진행중' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                    'bg-slate-100 border-slate-200 text-slate-500'
-                }`}>
-                    {status}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${calculated.color}`}>
+                    {calculated.text}
                 </span>
             </div>
             
-            {/* Checkbox Visuals for Status */}
-            <div className="flex gap-1">
-               <StatusCheckbox label="미착수" isChecked={status === '미착수'} />
-               <StatusCheckbox label="진행중" isChecked={status === '진행중'} colorClass="bg-blue-50 border-blue-200" />
-               <StatusCheckbox label="완료" isChecked={status === '완료'} colorClass="bg-green-50 border-green-200" />
+            {/* Simple Complete Checkbox Visual */}
+             <div className="flex items-center gap-2 mt-1">
+                <div className={`flex-1 p-2 rounded border flex items-center justify-center gap-1.5
+                    ${status === '완료' ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-400'}
+                `}>
+                     {status === '완료' ? <CheckSquare className="h-4 w-4"/> : <Square className="h-4 w-4"/>}
+                     <span className="text-xs font-bold">{status === '완료' ? '완료' : '미완료'}</span>
+                </div>
             </div>
 
             {/* Date & D-Day */}
@@ -73,7 +78,7 @@ const TaskStatusDisplay = ({ label, status, date }: { label: string, status: Tas
                     <Calendar className="h-3 w-3" />
                     <span>{date || '-'}</span>
                 </div>
-                <div className={`text-xs ${getDDayStyle(date, status)}`}>
+                <div className={`text-xs ${status === '완료' ? 'text-slate-400' : (calculated.text === '지연' ? 'text-red-600 font-bold' : 'text-blue-600')}`}>
                     {date ? (status === '완료' ? '완료됨' : getDDay(date)) : ''}
                 </div>
             </div>
@@ -87,6 +92,15 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projectId, projects, o
   if (!project) {
     return <div className="text-center p-10">프로젝트를 찾을 수 없습니다.</div>;
   }
+
+  // --- Helpers for D-Day styling in common info ---
+  const getCommonDDayStyle = (dateString?: string) => {
+      if (!dateString) return 'text-slate-400';
+      const dday = getDDay(dateString);
+      if (dday.startsWith('D+')) return 'text-red-600 font-bold';
+      if (dday === 'D-Day') return 'text-red-600 font-bold';
+      return 'text-blue-600 font-medium';
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -125,14 +139,14 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projectId, projects, o
                   <div className="text-xs text-slate-500 mb-1">FAT 일정</div>
                   <div className="flex items-center gap-2">
                       <span className="font-mono font-medium text-slate-800">{project.fatDate || '-'}</span>
-                      <span className={`text-xs ${getDDayStyle(project.fatDate)}`}>{getDDay(project.fatDate)}</span>
+                      <span className={`text-xs ${getCommonDDayStyle(project.fatDate)}`}>{getDDay(project.fatDate)}</span>
                   </div>
               </div>
               <div>
                   <div className="text-xs text-slate-500 mb-1">납기 일정</div>
                   <div className="flex items-center gap-2">
                       <span className="font-mono font-medium text-slate-800">{project.deliveryDate || '-'}</span>
-                      <span className={`text-xs ${getDDayStyle(project.deliveryDate)}`}>{getDDay(project.deliveryDate)}</span>
+                      <span className={`text-xs ${getCommonDDayStyle(project.deliveryDate)}`}>{getDDay(project.deliveryDate)}</span>
                   </div>
               </div>
           </div>

@@ -8,15 +8,38 @@ interface ProjectListProps {
   onNavigate: (view: ViewState, projectId?: string | null) => void;
 }
 
-const StatusBadge = ({ status }: { status: TaskStatus }) => {
-  const colors = {
-    '완료': 'text-green-600 font-bold',
-    '진행중': 'text-blue-600 font-bold',
-    '미착수': 'text-slate-400',
+// Helper to calculate status based on user rules
+// Rule: Complete -> '완료'
+// Rule: Incomplete & D-Day > 90 -> '정상'
+// Rule: Incomplete & D-Day <= 90 -> '지연'
+const getCalculatedStatus = (dbStatus: TaskStatus, dateStr?: string): '완료' | '정상' | '지연' | '미지정' => {
+  if (dbStatus === '완료') return '완료';
+  if (!dateStr) return '미지정';
+
+  const target = new Date(dateStr);
+  const today = new Date();
+  target.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+  
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays > 90 ? '정상' : '지연';
+};
+
+const StatusBadge = ({ status, date }: { status: TaskStatus, date?: string }) => {
+  const calculated = getCalculatedStatus(status, date);
+  
+  const styles = {
+    '완료': 'bg-green-100 text-green-700 border-green-200',
+    '정상': 'bg-blue-100 text-blue-700 border-blue-200',
+    '지연': 'bg-red-100 text-red-700 border-red-200',
+    '미지정': 'bg-slate-100 text-slate-500 border-slate-200'
   };
+
   return (
-    <span className={`text-xs ${colors[status]}`}>
-      ({status})
+    <span className={`text-[10px] px-2 py-0.5 rounded border font-bold whitespace-nowrap ${styles[calculated]}`}>
+      {calculated}
     </span>
   );
 };
@@ -26,6 +49,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
   const [filterStage, setFilterStage] = useState('');
   const [filterPM, setFilterPM] = useState('');
   const [filterPIC, setFilterPIC] = useState('');
+  
+  // Filters now use '완료', '정상', '지연'
   const [filterBOM, setFilterBOM] = useState('');
   const [filterDrawing, setFilterDrawing] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
@@ -44,10 +69,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
       const matchesPM = filterPM ? p.pm === filterPM : true;
       const matchesPIC = filterPIC ? p.items.some(i => i.pic === filterPIC) : true;
 
-      // Check if ANY item in the project matches the task status filters
-      const matchesBOM = filterBOM ? p.items.some(i => i.bomStatus === filterBOM) : true;
-      const matchesDrawing = filterDrawing ? p.items.some(i => i.drawingStatus === filterDrawing) : true;
-      const matchesProgram = filterProgram ? p.items.some(i => i.programStatus === filterProgram) : true;
+      // Check calculated status for filters
+      const matchesBOM = filterBOM ? p.items.some(i => getCalculatedStatus(i.bomStatus, i.bomDate) === filterBOM) : true;
+      const matchesDrawing = filterDrawing ? p.items.some(i => getCalculatedStatus(i.drawingStatus, i.drawingDate) === filterDrawing) : true;
+      const matchesProgram = filterProgram ? p.items.some(i => getCalculatedStatus(i.programStatus, i.programDate) === filterProgram) : true;
 
       return matchesSearch && matchesStage && matchesPM && matchesPIC && matchesBOM && matchesDrawing && matchesProgram;
     });
@@ -59,10 +84,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
     if (sortConfig !== null) {
       sortableProjects.sort((a, b) => {
         const getSortValue = (project: Project, key: string) => {
-            const getStatusWeight = (status: string) => {
-                const map: Record<string, number> = { '미착수': 1, '진행중': 2, '완료': 3 };
-                return map[status] || 0;
+            // Priority: 지연(1) > 정상(2) > 완료(3) > 미지정(4)
+            const getStatusWeight = (status: TaskStatus, date?: string) => {
+                const calc = getCalculatedStatus(status, date);
+                const map: Record<string, number> = { '지연': 1, '정상': 2, '완료': 3, '미지정': 4 };
+                return map[calc] || 5;
             };
+            
             const getStageWeight = (stage: string) => {
                 const map: Record<string, number> = { 'FAT 예정': 1, 'FAT 확정': 2, 'FAT 완료': 3, '납기 확정': 4, '납기 완료': 5 };
                 return map[stage] || 0;
@@ -75,9 +103,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
                 case 'stage': return getStageWeight(project.stage);
                 case 'serialNumber': return project.items[0]?.serialNumber || '';
                 case 'pic': return project.items[0]?.pic || '';
-                case 'bomStatus': return getStatusWeight(project.items[0]?.bomStatus || '');
-                case 'drawingStatus': return getStatusWeight(project.items[0]?.drawingStatus || '');
-                case 'programStatus': return getStatusWeight(project.items[0]?.programStatus || '');
+                case 'bomStatus': return getStatusWeight(project.items[0]?.bomStatus || '미착수', project.items[0]?.bomDate);
+                case 'drawingStatus': return getStatusWeight(project.items[0]?.drawingStatus || '미착수', project.items[0]?.drawingDate);
+                case 'programStatus': return getStatusWeight(project.items[0]?.programStatus || '미착수', project.items[0]?.programDate);
                 default: return '';
             }
         };
@@ -132,9 +160,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
   const TaskFilterOptions = () => (
     <>
       <option value="">전체</option>
+      <option value="지연">지연</option>
+      <option value="정상">정상</option>
       <option value="완료">완료</option>
-      <option value="진행중">진행중</option>
-      <option value="미착수">미착수</option>
     </>
   );
 
@@ -354,18 +382,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({ projects, onNavigate }
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          {/* Label removed as header is now explicit */}
-                          <StatusBadge status={item.bomStatus} />
+                          <StatusBadge status={item.bomStatus} date={item.bomDate} />
                         </div>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          <StatusBadge status={item.drawingStatus} />
+                          <StatusBadge status={item.drawingStatus} date={item.drawingDate} />
                         </div>
                       </td>
                       <td className="px-2 py-2 text-center align-middle">
                         <div className="flex flex-col items-center">
-                          <StatusBadge status={item.programStatus} />
+                          <StatusBadge status={item.programStatus} date={item.programDate} />
                         </div>
                       </td>
                       
