@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, List, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface LayoutProps {

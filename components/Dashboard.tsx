@@ -8,6 +8,21 @@ interface DashboardProps {
   onNavigate: (view: ViewState, projectId?: string | null) => void;
 }
 
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'];
+
+const StatCard = ({ title, value, subtext, colorClass }: any) => (
+  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+    <div className={`absolute top-0 left-0 w-1 h-full ${colorClass.replace('text-', 'bg-')}`}></div>
+    <div className="flex justify-between items-start">
+       <h3 className="text-sm font-bold text-slate-500 mb-2">{title}</h3>
+    </div>
+    <div className="flex flex-col">
+      <span className="text-3xl font-extrabold text-slate-800">{value}</span>
+      {subtext && <span className={`text-xs mt-1 font-medium ${colorClass}`}>{subtext}</span>}
+    </div>
+  </div>
+);
+
 export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) => {
   // --- Stats Calculation ---
   const totalProjects = projects.length;
@@ -65,22 +80,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
     });
   });
   const picChartData = Object.keys(picCounts).map(pic => ({ name: pic, value: picCounts[pic] }));
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'];
-
-  // --- Render Helpers ---
-  const StatCard = ({ title, value, subtext, colorClass }: any) => (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-      <div className={`absolute top-0 left-0 w-1 h-full ${colorClass.replace('text-', 'bg-')}`}></div>
-      <div className="flex justify-between items-start">
-         <h3 className="text-sm font-bold text-slate-500 mb-2">{title}</h3>
-      </div>
-      <div className="flex flex-col">
-        <span className="text-3xl font-extrabold text-slate-800">{value}</span>
-        {subtext && <span className={`text-xs mt-1 font-medium ${colorClass}`}>{subtext}</span>}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
