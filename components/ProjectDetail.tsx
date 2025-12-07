@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Save, Trash2, Plus, X, CheckCircle, Circle, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { Project, ProjectItem, TechnicalSpec, TaskStatus } from '../types';
@@ -53,15 +52,19 @@ const DateField = ({ value, onChange, className }: { value: string | undefined, 
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-      e.preventDefault();
+      // Prevent label clicks or bubble events triggering weird behaviors
+      // but ensure we can focus/show picker.
+      
       try {
-          if (inputRef.current && 'showPicker' in HTMLInputElement.prototype) {
+          if (inputRef.current && typeof inputRef.current.showPicker === 'function') {
             inputRef.current.showPicker();
+            e.preventDefault(); // Stop default only if we successfully manually triggered picker
           } else {
              inputRef.current?.focus();
           }
       } catch (err) {
           console.error('Error opening date picker:', err);
+          inputRef.current?.focus();
       }
   };
 

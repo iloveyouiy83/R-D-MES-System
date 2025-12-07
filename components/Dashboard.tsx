@@ -94,10 +94,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1 min-w-0">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1 min-w-[10px] w-full">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">월별 설계 계획</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={barChartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} />
@@ -112,10 +112,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-0">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-[10px] w-full">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">PM별 업무 현황</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart layout="vertical" data={pmChartData}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f1f5f9" />
                 <XAxis type="number" hide />
@@ -131,11 +131,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-0">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-[10px] w-full">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">담당자별 업무 현황</h3>
           <div className="h-64 overflow-y-auto scrollbar-hide">
             <div style={{ width: '100%', height: Math.max(250, picChartData.length * 40) }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart layout="vertical" data={picChartData}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f1f5f9" />
                   <XAxis type="number" hide />
