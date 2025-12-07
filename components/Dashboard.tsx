@@ -1,6 +1,6 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { AlertTriangle, Calendar, Search, Plus, ArrowRight } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { AlertTriangle, Calendar, Search, Plus } from 'lucide-react';
 import { Project, ViewState } from '../types';
 
 interface DashboardProps {
@@ -33,7 +33,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
   }).length;
 
   // --- Chart 1: Monthly Plan (Design/BOM/Program count) ---
-  // Group by Month of Delivery or FAT? Assuming Delivery for general plan.
   const monthMap: {[key: string]: {name: string, bom: number, drawing: number, program: number}} = {};
   
   projects.forEach(p => {
@@ -95,7 +94,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 lg:col-span-1 min-w-0">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">월별 설계 계획</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -113,7 +112,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-0">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">PM별 업무 현황</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -132,18 +131,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, onNavigate }) =>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm col-span-1 min-w-0">
           <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-slate-800 pl-2">담당자별 업무 현황</h3>
           <div className="h-64 overflow-y-auto scrollbar-hide">
-            <ResponsiveContainer width="100%" height={Math.max(250, picChartData.length * 40)}>
-              <BarChart layout="vertical" data={picChartData}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f1f5f9" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} width={60} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Bar dataKey="value" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: Math.max(250, picChartData.length * 40) }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={picChartData}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f1f5f9" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} width={60} />
+                  <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="value" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
