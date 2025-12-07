@@ -2,7 +2,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { Calendar, Megaphone, ChevronRight } from 'lucide-react';
-import { Project, ViewState, Notice } from '../types';
+import { Project, ViewState, Notice, TaskStatus } from '../types';
 
 interface DashboardProps {
   projects: Project[];
@@ -40,14 +40,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, notices, onNavig
     return diffDays >= 0 && diffDays <= 7;
   }).length;
   
-  const delayedProjects = projects.filter(p => {
-    // Delayed if FAT date passed and stage is not FAT Complete/Delivery Confirmed/Complete
-    if (!p.fatDate) return false;
-    const fat = new Date(p.fatDate);
-    const now = new Date();
-    const isCompleted = ['FAT 완료', '납기 확정', '납기 완료'].includes(p.stage);
-    return fat < now && !isCompleted;
-  }).length;
+  // Logic to count ALL delayed tasks (BOM, Drawing, Program) across all items
+  // Delayed means: Status != '완료' AND D-Day <= 90
+  let delayedTaskCount = 0;
+  projects.forEach(p => {
+    p.items.forEach(item => {
+        const checkDelay = (status: TaskStatus, date?: string) => {
+            if (status === '완료') return false;
+            if (!date) return false; // If date is missing, we consider it 'Unset' (미지정), not 'Delayed' yet
+            
+            const target = new Date(date);
+            const today = new Date();
+            target.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+            const diffTime = target.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays <= 90;
+        };
+
+        if (checkDelay(item.bomStatus, item.bomDate)) delayedTaskCount++;
+        if (checkDelay(item.drawingStatus, item.drawingDate)) delayedTaskCount++;
+        if (checkDelay(item.programStatus, item.programDate)) delayedTaskCount++;
+    });
+  });
 
   // --- Chart 1: Monthly Plan (Design/BOM/Program count) ---
   const monthMap: {[key: string]: {name: string, bom: number, drawing: number, program: number}} = {};
@@ -90,7 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, notices, onNavig
         <StatCard title="전체 PJ" value={`${totalProjects}건`} subtext="" colorClass="text-slate-600" />
         <StatCard title="FAT 확정" value={`${fatConfirmedProjects}건`} subtext="이번 주" colorClass="text-blue-600" />
         <StatCard title="이번 주 출고" value={`${thisWeekProjects}건`} subtext="예정" colorClass="text-green-600" />
-        <StatCard title="지연" value={`${delayedProjects}건`} subtext="조치 필요" colorClass="text-red-600" />
+        <StatCard title="지연" value={`${delayedTaskCount}건`} subtext="조치 필요" colorClass="text-red-600" />
       </div>
 
       {/* Charts Section */}
@@ -195,7 +211,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, notices, onNavig
              {projects.slice(0, 4).map((p) => (
                 <div key={'fat'+p.id} className="p-3 bg-white rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold">{p.fatDate.substring(5)} ({['일','월','화','수','목','금','토'][new Date(p.fatDate).getDay()]})</div>
+                        <div className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold">{p.fatDate ? p.fatDate.substring(5) : '-'} ({p.fatDate ? ['일','월','화','수','목','금','토'][new Date(p.fatDate).getDay()] : '-'})</div>
                         <div className="text-slate-700 font-medium text-sm">{p.items[0]?.serialNumber} FAT 예정</div>
                     </div>
                 </div>
